@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// AUTH & USERS
+// ─────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  addresses Address[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model Address {
+  id         String  @id @default(uuid())
+  userId     String
+  label      String?
+  line1      String
+  line2      String?
+  city       String
+  district   String?
+  postalCode String?
+  isDefault  Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// PRODUCTS & CATALOG
+// ─────────────────────────────────────────
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  imageUrl    String?
+  sortOrder   Int     @default(0)
+
+  products Product[]
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  categoryId  String
+  name        String
+  slug        String      @unique
+  description String?
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  basePrice   Float
+
+  // 3D / 2D Preview
+  previewType   PreviewType @default(IMAGE_2D)
+  modelUrl      String?     // Cloudinary URL → .glb file
+  thumbnailUrl  String?     // Cloudinary URL → static fallback image
+
+  // UV region where customer image is mapped on the 3D model
+  // { "offsetX": 0.1, "offsetY": 0.2, "width": 0.8, "height": 0.6, "rotation": 0 }
+  previewRegion Json?
+
+  // Real world print area — used for DPI validation
+  // { "widthMm": 85, "heightMm": 85 }
+  printAreaMm Json?
+  dpiMinimum  Int     @default(150)
+
+  // Available options e.g. [{ "name": "Size", "values": ["11oz", "15oz"] }]
+  optionSchema Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category   Category         @relation(fields: [categoryId], references: [id])
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+}
+
+enum PreviewType {
+  IMAGE_2D
+  MODEL_3D
+}
+
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  options   Json    // { "Size": "11oz", "Color": "White" }
+  price     Float
+  sku       String? @unique
+  stock     Int?    // null = print-on-demand
+
+  product    Product     @relation(fields: [productId], references: [id])
+  orderItems OrderItem[]
+}
+
+// ─────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────
+
+model Order {
+  id            String        @id @default(uuid())
+  orderNumber   String        @unique // human-readable e.g. "ORD-2024-0042"
+  userId        String?       // null = guest checkout
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(BANK_TRANSFER)
+  totalAmount   Float
+  currency      String        @default("LKR")
+  notes         String?
+
+  // Shipping snapshot
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress Json?
+
+  // Payment evidence
+  paymentSlipUrl String?   // Cloudinary URL → uploaded by customer
+  paymentNote    String?   // admin note e.g. "Verified via HNB ref #1234"
+  paidAt         DateTime? // set by admin on confirmation
+
+  // Receipt
+  receiptUrl String?   // Cloudinary URL → generated PDF
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User?            @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+  statusLogs OrderStatusLog[]
+}
+
+enum OrderStatus {
+  PENDING          // order placed, awaiting payment slip
+  SLIP_SUBMITTED   // customer uploaded payment slip
+  CONFIRMED        // admin verified payment
+  IN_PRODUCTION    // printing in progress
+  READY            // ready for pickup or dispatch
+  DELIVERED        // completed
+  CANCELLED        // expired, rejected, or customer cancelled
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH_ON_PICKUP
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  variantId String?
+  quantity  Int
+  unitPrice Float   // price snapshot at time of order
+
+  // Customer's preview configuration
+  // { "imageUrl": "...", "scale": 1.0, "offsetX": 0, "offsetY": 0, "rotation": 0 }
+  customizationData Json?
+
+  order   Order           @relation(fields: [orderId], references: [id])
+  product Product         @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  files   UploadedFile[]
+}
+
+model UploadedFile {
+  id          String   @id @default(uuid())
+  orderItemId String
+  storageUrl  String   // Cloudinary URL
+  publicId    String   // Cloudinary public_id (needed for deletion/transforms)
+  fileName    String
+  fileType    String   // MIME type
+  sizeBytes   Int
+  widthPx     Int?     // from Cloudinary response — used for DPI check
+  heightPx    Int?
+  uploadedAt  DateTime @default(now())
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+model OrderStatusLog {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
