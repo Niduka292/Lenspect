@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../node_modules/.prisma/client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -99,12 +99,14 @@ enum PreviewType {
 }
 
 model ProductVariant {
-  id        String  @id @default(uuid())
-  productId String
-  options   Json    // { "Size": "11oz", "Color": "White" }
-  price     Float
-  sku       String? @unique
-  stock     Int?    // null = print-on-demand
+  id          String  @id @default(uuid())
+  productId   String
+  options     Json
+  price       Float
+  sku         String? @unique
+  stock       Int?
+  imageUrl    String?
+  description String?
 
   product    Product     @relation(fields: [productId], references: [id])
   orderItems OrderItem[]
