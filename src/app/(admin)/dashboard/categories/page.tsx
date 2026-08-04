@@ -19,7 +19,7 @@ export default async function CategoriesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Categories</h1>
         <Button size="sm" asChild>
-          <Link href="/admin/dashboard/categories/new">
+          <Link href="/dashboard/categories/new">
             <Plus className="h-4 w-4 mr-2" />
             New Category
           </Link>
@@ -48,7 +48,7 @@ export default async function CategoriesPage() {
                 <td className="px-4 py-3 text-muted-foreground">{cat.sortOrder}</td>
                 <td className="px-4 py-3 flex items-center justify-end gap-2">
                   <Button variant="ghost" size="icon" asChild>
-                    <Link href={`/admin/dashboard/categories/${cat.id}`}>
+                    <Link href={`/dashboard/categories/${cat.id}`}>
                       <Pencil className="h-4 w-4" />
                     </Link>
                   </Button>
