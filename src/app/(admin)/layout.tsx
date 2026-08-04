@@ -12,9 +12,9 @@ export default async function AdminLayout({
   await requireAdmin()
 
   const navItems = [
-    { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/admin/dashboard/products", label: "Products", icon: Package },
-    { href: "/admin/dashboard/categories", label: "Categories", icon: Tag },
+    { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/products", label: "Products", icon: Package },
+    { href: "/dashboard/categories", label: "Categories", icon: Tag },
   ]
 
   return (

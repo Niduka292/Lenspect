@@ -49,7 +49,7 @@ export function CategoryForm({ initial }: Props) {
       return
     }
 
-    router.push("/admin/dashboard/categories")
+    router.push("/dashboard/categories")
     router.refresh()
   }
 

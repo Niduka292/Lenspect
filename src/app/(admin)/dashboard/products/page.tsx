@@ -22,7 +22,7 @@ export default async function ProductsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Products</h1>
         <Button size="sm" asChild>
-          <Link href="/admin/dashboard/products/new">
+          <Link href="/dashboard/products/new">
             <Plus className="h-4 w-4 mr-2" />
             New Product
           </Link>
