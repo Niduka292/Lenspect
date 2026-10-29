@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ColorSelector } from "./ColorSelector"
 import { VariantSelector } from "./VariantSelector"
 import { PreviewPlaceholder } from "./PreviewPlaceholder"
-import { ShoppingCart, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { ShoppingCart, ArrowLeft, Check } from "lucide-react"
+import { useCartStore } from "./../../app/store/cartStore"
 
 interface Variant {
   id: string; options: Record<string, string>; price: number
@@ -22,6 +23,9 @@ interface Product {
 
 export function ProductDetailClient({ product }: { product: Product }) {
   const router = useRouter()
+  const addItem = useCartStore((s) => s.addItem)
+  const [added, setAdded] = useState(false)
+
   const hasVariants = product.variants.length > 0
 
   const colors = (() => {
@@ -39,9 +43,38 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const displayPrice = selectedVariant?.price ?? product.basePrice
   const displayDescription = selectedVariant?.description ?? product.description
 
+  function handleAddToCart() {
+    addItem({
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      thumbnailUrl: displayImage,
+      variantId: selectedVariant?.id ?? null,
+      variantSize: selectedVariant?.options.Size ?? null,
+      selectedColor: selectedColor || null,
+      price: displayPrice,
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
+  const cartButton = (
+    <Button
+      size="lg"
+      className="w-full gap-2"
+      onClick={handleAddToCart}
+      style={added ? { backgroundColor: "#A3B19B" } : {}}
+    >
+      {added ? (
+        <><Check className="h-5 w-5" /> Added to Cart</>
+      ) : (
+        <><ShoppingCart className="h-5 w-5" /> Add to Cart</>
+      )}
+    </Button>
+  )
+
   return (
     <div style={{ backgroundColor: "#FBF9F5" }}>
-      {/* Back link */}
       <Link
         href="/products"
         className="inline-flex items-center gap-1 text-sm mb-8"
@@ -54,15 +87,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
       <div className="grid md:grid-cols-2 gap-10 pb-24 md:pb-0">
         {/* Left — image */}
         <div className="space-y-3">
-          <div
-            style={{
-              aspectRatio: "1 / 1",
-              backgroundColor: "#F9F9F9",
-              borderRadius: "1rem",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
+          <div style={{ aspectRatio: "1/1", backgroundColor: "#F9F9F9", borderRadius: "1rem", overflow: "hidden", position: "relative" }}>
             {displayImage ? (
               <Image src={displayImage} alt={product.name} fill className="object-cover" />
             ) : (
@@ -72,7 +97,6 @@ export function ProductDetailClient({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* Variant thumbnails */}
           {hasVariants && product.variants.some((v) => v.imageUrl) && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {product.variants.map((v) => (
@@ -103,16 +127,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
         {/* Right — details */}
         <div className="space-y-6">
           <div>
-            <span
-              className="inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-3"
-              style={{ backgroundColor: "#EDF0EB", color: "#A3B19B" }}
-            >
+            <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-3" style={{ backgroundColor: "#EDF0EB", color: "#A3B19B" }}>
               {product.category.name}
             </span>
-            <h1
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#22252A", lineHeight: 1.25 }}
-              className="text-2xl font-bold mb-3"
-            >
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#22252A", lineHeight: 1.25 }} className="text-2xl font-bold mb-3">
               {product.name}
             </h1>
             {displayDescription && (
@@ -131,28 +149,15 @@ export function ProductDetailClient({ product }: { product: Product }) {
           )}
 
           {hasVariants && selectedVariant && (
-            <VariantSelector
-              variants={product.variants}
-              selected={selectedVariant}
-              onChange={setSelectedVariant}
-            />
+            <VariantSelector variants={product.variants} selected={selectedVariant} onChange={setSelectedVariant} />
           )}
 
           <PreviewPlaceholder />
 
           {/* Desktop CTA */}
-          <div className="hidden md:block">
-            <Button size="lg" className="w-full gap-2" onClick={() => router.push("/cart")}>
-              <ShoppingCart className="h-5 w-5" />
-              Add to Cart
-            </Button>
-          </div>
+          <div className="hidden md:block">{cartButton}</div>
 
-          {/* Payment info */}
-          <div
-            style={{ backgroundColor: "#EDF0EB", borderRadius: "0.75rem", padding: "1rem" }}
-            className="text-sm space-y-1.5"
-          >
+          <div style={{ backgroundColor: "#EDF0EB", borderRadius: "0.75rem", padding: "1rem" }} className="text-sm space-y-1.5">
             <p style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>💳 Pay via bank transfer after ordering</p>
             <p style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>📦 Delivered island-wide across Sri Lanka</p>
             <p style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>🖨️ Professional print quality guaranteed</p>
@@ -161,18 +166,8 @@ export function ProductDetailClient({ product }: { product: Product }) {
       </div>
 
       {/* Sticky mobile CTA */}
-      <div
-        className="fixed bottom-0 left-0 right-0 md:hidden z-40"
-        style={{
-          backgroundColor: "#FBF9F5",
-          borderTop: "1px solid #E8E4DE",
-          padding: "1rem",
-        }}
-      >
-        <Button size="lg" className="w-full gap-2" onClick={() => router.push("/cart")}>
-          <ShoppingCart className="h-5 w-5" />
-          Add to Cart — LKR {displayPrice.toLocaleString()}
-        </Button>
+      <div className="fixed bottom-0 left-0 right-0 md:hidden z-40" style={{ backgroundColor: "#FBF9F5", borderTop: "1px solid #E8E4DE", padding: "1rem" }}>
+        {cartButton}
       </div>
     </div>
   )
