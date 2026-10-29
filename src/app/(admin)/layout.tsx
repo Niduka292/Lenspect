@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { requireAdmin } from "@/lib/admin"
-import { LayoutDashboard, Package, Tag, LogOut } from "lucide-react"
+import { LayoutDashboard, Package, Tag, ShoppingBag, LogOut } from "lucide-react"
 import { logout } from "@/lib/supabase/actions"
 import { Button } from "@/components/ui/button"
 
@@ -13,10 +13,10 @@ export default async function AdminLayout({
 
   const navItems = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
     { href: "/dashboard/products", label: "Products", icon: Package },
     { href: "/dashboard/categories", label: "Categories", icon: Tag },
   ]
-
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
